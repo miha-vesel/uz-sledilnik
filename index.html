@@ -478,6 +478,18 @@
   </div>
 
   <div class="card">
+    <div class="card-title">Uvoz slovenskih praznikov</div>
+    <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+      <select id="uvoz-leto" style="width:auto;padding:8px 12px"></select>
+      <button class="btn btn-primary" onclick="uvozPraznike()" id="btn-uvoz">Uvozi praznike</button>
+      <span id="uvoz-status" style="font-size:13px;color:var(--gray-500)"></span>
+    </div>
+    <div style="font-size:12px;color:var(--gray-400);margin-top:10px">
+      Uvozi vse uradne slovenske dela proste dni za izbrano leto (vključno z Veliko nočjo). Že obstoječi datumi se ne podvojijo.
+    </div>
+  </div>
+
+  <div class="card">
     <div class="card-title">Dodaj prosti dan</div>
     <div class="form-row-3">
       <div class="form-group">
@@ -579,7 +591,11 @@ function ponedelkjiVmesecu(leto, mesec) {
   const dnevi = [];
   const d = new Date(leto, mesec - 1, 1);
   while (d.getMonth() === mesec - 1) {
-    if (d.getDay() === 1) dnevi.push(d.toISOString().slice(0,10));
+    if (d.getDay() === 1) {
+      // Uporabi lokalni datum (ne UTC) da se izognemo timezone shiftu
+      const iso = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+      dnevi.push(iso);
+    }
     d.setDate(d.getDate() + 1);
   }
   return dnevi;
@@ -1055,11 +1071,108 @@ function toast(msg, err=false) {
   toastTimer = setTimeout(() => t.className = '', 3000);
 }
 
+// ─── SLOVENSKI PRAZNIKI ──────────────────────────────────────────
+// Izračun velikonočne nedelje (algoritem Anonymous Gregorian)
+function velikaNoc(leto) {
+  const a = leto % 19;
+  const b = Math.floor(leto / 100);
+  const c = leto % 100;
+  const d = Math.floor(b / 4);
+  const e = b % 4;
+  const f = Math.floor((b + 8) / 25);
+  const g = Math.floor((b - f + 1) / 3);
+  const h = (19 * a + b - d - g + 15) % 30;
+  const i = Math.floor(c / 4);
+  const k = c % 4;
+  const l = (32 + 2 * e + 2 * i - h - k) % 7;
+  const m = Math.floor((a + 11 * h + 22 * l) / 451);
+  const mes = Math.floor((h + l - 7 * m + 114) / 31);
+  const dan = ((h + l - 7 * m + 114) % 31) + 1;
+  return new Date(leto, mes - 1, dan);
+}
+
+function isoDate(d) {
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+}
+
+function slovenskiPrazniki(leto) {
+  const vn = velikaNoc(leto);
+  const vnPon = new Date(vn); vnPon.setDate(vn.getDate() + 1);
+  const p = (m,d) => `${leto}-${String(m).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+  const fiksni = [
+    { datum: p(1,1),  opomba: 'Novo leto' },
+    { datum: p(1,2),  opomba: 'Novo leto' },
+    { datum: p(2,8),  opomba: 'Prešernov dan' },
+    { datum: p(4,27), opomba: 'Dan upora proti okupatorju' },
+    { datum: p(5,1),  opomba: 'Praznik dela' },
+    { datum: p(5,2),  opomba: 'Praznik dela' },
+    { datum: p(6,25), opomba: 'Dan državnosti' },
+    { datum: p(8,15), opomba: 'Marijino vnebovzetje' },
+    { datum: p(10,31),opomba: 'Dan reformacije' },
+    { datum: p(11,1), opomba: 'Dan spomina na mrtve' },
+    { datum: p(12,25),opomba: 'Božič' },
+    { datum: p(12,26),opomba: 'Dan samostojnosti in enotnosti' },
+  ];
+  fiksni.push({ datum: isoDate(vnPon), opomba: 'Velikonočni ponedeljek' });
+  return fiksni;
+}
+
+async function uvozPraznike() {
+  const leto = parseInt(document.getElementById('uvoz-leto').value);
+  const btn = document.getElementById('btn-uvoz');
+  const status = document.getElementById('uvoz-status');
+  btn.disabled = true;
+  btn.textContent = 'Uvažam...';
+  status.textContent = '';
+  try {
+    const od = `${leto}-01-01`;
+    const do_ = `${leto}-12-31`;
+    const obstojechi = await sb(`off_days?datum=gte.${od}&datum=lte.${do_}&select=datum`);
+    const obstojechiDatumi = obstojechi.map(o => o.datum);
+    const prazniki = slovenskiPrazniki(leto);
+    const novi = prazniki.filter(p => !obstojechiDatumi.includes(p.datum));
+    if (novi.length === 0) {
+      status.textContent = 'Vsi prazniki za to leto so že vneseni.';
+      btn.disabled = false;
+      btn.textContent = 'Uvozi praznike';
+      return;
+    }
+    const payload = novi.map(p => ({ datum: p.datum, tip: 'praznik', opomba: p.opomba }));
+    await sb('off_days', { method: 'POST', body: JSON.stringify(payload) });
+    const ponedeljki = novi.filter(p => {
+      const d = new Date(p.datum + 'T12:00:00');
+      return d.getDay() === 1;
+    });
+    status.textContent = `Dodano ${novi.length} praznikov` +
+      (ponedeljki.length > 0 ? ` (${ponedeljki.length} pade na ponedeljek)` : '') + '.';
+    toast(`Uvoženih ${novi.length} praznikov za ${leto} ✓`);
+    naloziProsteDneve();
+    naloziQuickStats();
+  } catch(e) {
+    toast('Napaka pri uvozu: ' + e.message, true);
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Uvozi praznike';
+  }
+}
+
+function initUvozLetoSelector() {
+  const sel = document.getElementById('uvoz-leto');
+  const y = new Date().getFullYear();
+  for (let l = y + 1; l >= y - 2; l--) {
+    const o = document.createElement('option');
+    o.value = l; o.textContent = l;
+    if (l === y) o.selected = true;
+    sel.appendChild(o);
+  }
+}
+
 // ─── INIT ────────────────────────────────────────────────────────
 document.getElementById('f-datum').value = new Date().toISOString().slice(0,10);
 initPreiskaveTabela();
 initLetoSelector();
 initQuarterSel();
+initUvozLetoSelector();
 naloziQuickStats();
 </script>
 </body>

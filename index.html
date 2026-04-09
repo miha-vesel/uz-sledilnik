@@ -333,6 +333,33 @@
   .izplacilo-total { display: flex; justify-content: space-between; font-size: 16px; font-weight: 700; color: var(--primary-dark); border-top: 1px solid #93c5fd; margin-top: 8px; padding-top: 8px; }
 
   .empty-state { text-align: center; padding: 48px 20px; color: var(--gray-400); }
+
+  /* RAZŠIRLJIVE VRSTICE */
+  .expand-btn {
+    width: 22px; height: 22px;
+    border: none; background: none; cursor: pointer;
+    color: var(--gray-400); font-size: 13px;
+    display: flex; align-items: center; justify-content: center;
+    border-radius: 4px; transition: all .15s; padding: 0;
+  }
+  .expand-btn:hover { background: var(--gray-100); color: var(--gray-700); }
+  .expand-btn.open { color: var(--primary); }
+  .detail-row td { padding: 0 !important; border-bottom: 1px solid var(--gray-200) !important; }
+  .detail-inner {
+    display: none;
+    padding: 10px 14px 12px 44px;
+    background: var(--gray-50);
+  }
+  .detail-inner.open { display: block; }
+  .detail-grid {
+    display: flex; flex-wrap: wrap; gap: 6px 16px;
+    font-size: 13px;
+  }
+  .detail-item { display: flex; align-items: center; gap: 6px; }
+  .detail-item-name { color: var(--gray-500); }
+  .detail-item-val { font-weight: 600; color: var(--gray-800); }
+  .detail-item-rtg .detail-item-name { color: #92400e; }
+  .detail-item-rtg .detail-item-val { color: #92400e; }
   .empty-state-icon { font-size: 36px; margin-bottom: 10px; }
   .empty-state-text { font-size: 14px; }
 
@@ -528,10 +555,17 @@
   <div class="section-header">
     <div class="section-title">Zgodovina ambulant</div>
   </div>
+  <div style="display:flex;gap:10px;margin-bottom:14px;flex-wrap:wrap">
+    <select id="hist-leto" onchange="posodobiHistMesece()" style="width:auto;padding:8px 12px"></select>
+    <select id="hist-mesec" onchange="naloziZgodovino()" style="width:auto;padding:8px 12px">
+      <option value="">Vsi meseci</option>
+    </select>
+  </div>
   <div class="card" style="padding:0;overflow:hidden">
     <table class="history-table">
       <thead>
         <tr>
+          <th style="width:28px"></th>
           <th>Datum</th>
           <th>Lokacija</th>
           <th>Plačilo</th>
@@ -541,7 +575,7 @@
         </tr>
       </thead>
       <tbody id="history-tbody">
-        <tr><td colspan="6" class="loading-row"><div class="spinner"></div></td></tr>
+        <tr><td colspan="7" class="loading-row"><div class="spinner"></div></td></tr>
       </tbody>
     </table>
   </div>
@@ -997,12 +1031,57 @@ async function izbrisiProstiDan(id) {
 }
 
 // ─── ZGODOVINA ───────────────────────────────────────────────────
+function initHistLetoSelector() {
+  const sel = document.getElementById('hist-leto');
+  const y = new Date().getFullYear();
+  for (let l = y; l >= y - 3; l--) {
+    const o = document.createElement('option');
+    o.value = l; o.textContent = l;
+    sel.appendChild(o);
+  }
+  posodobiHistMesece();
+}
+
+function posodobiHistMesece() {
+  const leto = parseInt(document.getElementById('hist-leto').value);
+  const sel = document.getElementById('hist-mesec');
+  const trenutni = sel.value;
+  const meseci = ['','Januar','Februar','Marec','April','Maj','Junij','Julij','Avgust','September','Oktober','November','December'];
+  sel.innerHTML = '<option value="">Vsi meseci</option>';
+  const now = new Date();
+  const maxM = leto === now.getFullYear() ? now.getMonth() + 1 : 12;
+  for (let m = 1; m <= maxM; m++) {
+    const o = document.createElement('option');
+    o.value = String(m).padStart(2,'0');
+    o.textContent = meseci[m];
+    if (o.value === trenutni) o.selected = true;
+    sel.appendChild(o);
+  }
+  naloziZgodovino();
+}
+
+function toggleDetail(id) {
+  const inner = document.getElementById('detail-' + id);
+  const btn = document.getElementById('ebtn-' + id);
+  const open = inner.classList.toggle('open');
+  btn.classList.toggle('open', open);
+  btn.textContent = open ? '▾' : '▸';
+}
+
 async function naloziZgodovino() {
   const tb = document.getElementById('history-tbody');
+  tb.innerHTML = `<tr><td colspan="7" class="loading-row"><div class="spinner"></div></td></tr>`;
   try {
-    const sessions = await sb('sessions?order=datum.desc&select=*');
+    const leto = document.getElementById('hist-leto').value;
+    const mesec = document.getElementById('hist-mesec').value;
+    let filter = `datum=gte.${leto}-01-01&datum=lte.${leto}-12-31`;
+    if (mesec) {
+      const zadnji = new Date(parseInt(leto), parseInt(mesec), 0).getDate();
+      filter = `datum=gte.${leto}-${mesec}-01&datum=lte.${leto}-${mesec}-${zadnji}`;
+    }
+    const sessions = await sb(`sessions?${filter}&order=datum.desc&select=*`);
     if (sessions.length === 0) {
-      tb.innerHTML = '<tr><td colspan="6"><div class="empty-state"><div class="empty-state-icon">📋</div><div class="empty-state-text">Ni še vnesenih ambulant</div></div></td></tr>';
+      tb.innerHTML = `<tr><td colspan="7"><div class="empty-state"><div class="empty-state-icon">📋</div><div class="empty-state-text">Ni ambulant za izbrano obdobje</div></div></td></tr>`;
       return;
     }
     const ids = sessions.map(s => s.id).join(',');
@@ -1015,21 +1094,37 @@ async function naloziZgodovino() {
         if (it.vrsta_preiskave === 'RTG PC') rtg += it.kolicina;
         else uz += it.kolicina;
       });
-      const detail = si.map(it => `${it.vrsta_preiskave}: ${it.kolicina}`).join(', ');
+      const detailItems = si.map(it => {
+        const isRtg = it.vrsta_preiskave === 'RTG PC';
+        return `<div class="detail-item ${isRtg ? 'detail-item-rtg' : ''}">
+          <span class="detail-item-name">${it.vrsta_preiskave}</span>
+          <span class="detail-item-val">${it.kolicina}×</span>
+        </div>`;
+      }).join('');
+      const sid = s.id.replace(/-/g,'');
       return `
-        <tr title="${detail}">
+        <tr style="cursor:pointer" onclick="toggleDetail('${sid}')">
+          <td><button class="expand-btn" id="ebtn-${sid}">▸</button></td>
           <td>${formatDatum(s.datum)}</td>
           <td><span class="loc-badge ${s.lokacija==='Ljubljana'?'loc-lj':'loc-bled'}">${s.lokacija}</span></td>
           <td><span class="plac-badge">${s.vrsta_placila}</span></td>
           <td>${uz > 0 ? uz : '—'}</td>
           <td>${rtg > 0 ? rtg : '—'}</td>
-          <td>
+          <td onclick="event.stopPropagation()">
             <button class="btn btn-danger btn-sm" onclick="izbrisiSejo('${s.id}')">Briši</button>
+          </td>
+        </tr>
+        <tr class="detail-row">
+          <td colspan="7">
+            <div class="detail-inner" id="detail-${sid}">
+              <div class="detail-grid">${detailItems}</div>
+            </div>
           </td>
         </tr>`;
     }).join('');
   } catch(e) {
-    tb.innerHTML = '<tr><td colspan="6" style="color:var(--danger);padding:20px">Napaka pri nalaganju</td></tr>';
+    tb.innerHTML = `<tr><td colspan="7" style="color:var(--danger);padding:20px">Napaka pri nalaganju</td></tr>`;
+    console.error(e);
   }
 }
 
@@ -1173,6 +1268,7 @@ initPreiskaveTabela();
 initLetoSelector();
 initQuarterSel();
 initUvozLetoSelector();
+initHistLetoSelector();
 naloziQuickStats();
 </script>
 </body>

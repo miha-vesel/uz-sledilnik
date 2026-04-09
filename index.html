@@ -383,6 +383,7 @@
   <div class="nav-tab" onclick="showPage('trimesecje')">Trimesečje</div>
   <div class="nav-tab" onclick="showPage('prosti')">Prosti dnevi</div>
   <div class="nav-tab" onclick="showPage('zgodovina')">Zgodovina</div>
+  <div class="nav-tab" onclick="showPage('nastavitve')">Nastavitve</div>
 </nav>
 
 <!-- ====== VNOS ====== -->
@@ -582,6 +583,47 @@
 </div>
 </div>
 
+<!-- ====== NASTAVITVE ====== -->
+<div id="page-nastavitve" class="page">
+<div class="container">
+  <div class="section-header">
+    <div class="section-title">Nastavitve</div>
+  </div>
+  <div class="card">
+    <div class="card-title">Norma preiskav</div>
+    <div class="form-group" style="max-width:300px">
+      <label>Norma UZ preiskav na delovni teden</label>
+      <input type="number" id="set-norma" min="1" max="50" value="19">
+    </div>
+    <div style="font-size:12px;color:var(--gray-400);margin-bottom:14px">
+      Trenutno: <strong id="set-norma-trenutna">19</strong> preiskav/teden. Sprememba velja za vse mesece in trimesečja.
+    </div>
+    <div class="btn-row" style="justify-content:flex-start">
+      <button class="btn btn-primary" onclick="shraniNormo()">Shrani</button>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-title">Cene viškov</div>
+    <div class="form-row" style="max-width:400px">
+      <div class="form-group">
+        <label>UZ preiskava (€ bruto)</label>
+        <input type="number" id="set-eur-uz" min="1" value="36">
+      </div>
+      <div class="form-group">
+        <label>RTG preiskava (€ bruto)</label>
+        <input type="number" id="set-eur-rtg" min="1" value="5">
+      </div>
+    </div>
+    <div style="font-size:12px;color:var(--gray-400);margin-bottom:14px">
+      Trenutno: UZ = <strong id="set-eur-uz-trenutna">36</strong> €, RTG = <strong id="set-eur-rtg-trenutna">5</strong> €
+    </div>
+    <div class="btn-row" style="justify-content:flex-start">
+      <button class="btn btn-primary" onclick="shraniCene()">Shrani</button>
+    </div>
+  </div>
+</div>
+</div>
+
 <div id="toast"></div>
 
 <script>
@@ -598,9 +640,9 @@ const PREISKAVE = [
   { id: 'RTG PC',               rtg: true  },
 ];
 
-const NORMA_TEDEN = 19;
-const EUR_UZ = 36;
-const EUR_RTG = 5;
+let NORMA_TEDEN = 19; // se naloži iz Supabase
+let EUR_UZ = 36;
+let EUR_RTG = 5;
 
 // ─── API helpers ────────────────────────────────────────────────
 async function sb(path, opts={}) {
@@ -839,23 +881,14 @@ function initQuarterSel() {
   const sel = document.getElementById('quarter-sel');
   const now = new Date();
   const y = now.getFullYear();
-  const quarters = [
+  const currentQ = Math.floor(now.getMonth() / 3);
+  const allQ = [
     { label: `Q1 ${y}`, months: [1,2,3], leto: y },
     { label: `Q2 ${y}`, months: [4,5,6], leto: y },
     { label: `Q3 ${y}`, months: [7,8,9], leto: y },
     { label: `Q4 ${y}`, months: [10,11,12], leto: y },
-    { label: `Q1 ${y-1}`, months: [1,2,3], leto: y-1 },
-    { label: `Q2 ${y-1}`, months: [4,5,6], leto: y-1 },
-    { label: `Q3 ${y-1}`, months: [7,8,9], leto: y-1 },
-    { label: `Q4 ${y-1}`, months: [10,11,12], leto: y-1 },
   ];
-  // Pokaži samo relevantne (ne v prihodnosti)
-  const currentQ = Math.floor((now.getMonth()) / 3);
-  const relevant = quarters.filter((q,i) => {
-    if (q.leto < y) return true;
-    const qi = quarters.slice(0,4).indexOf(q);
-    return qi <= currentQ;
-  });
+  const relevant = allQ.filter((q,i) => i <= currentQ);
 
   sel.innerHTML = relevant.map((q,i) => `
     <button class="quarter-btn ${i===0?'active':''}" onclick="selectQuarter(this, ${q.leto}, '${q.months.join(',')}')">${q.label}</button>
@@ -1149,6 +1182,7 @@ function showPage(name) {
   if (name === 'trimesecje') { /* already loaded on tab create */ }
   if (name === 'prosti') naloziProsteDneve();
   if (name === 'zgodovina') naloziZgodovino();
+  if (name === 'nastavitve') prikaziNastavitve();
 }
 
 // ─── UTILS ───────────────────────────────────────────────────────
@@ -1262,14 +1296,74 @@ function initUvozLetoSelector() {
   }
 }
 
+// ─── NASTAVITVE ──────────────────────────────────────────────────
+async function naloziNastavitve() {
+  try {
+    const data = await sb('nastavitve?id=eq.1&select=*');
+    if (data && data.length > 0) {
+      const n = data[0];
+      NORMA_TEDEN = n.norma_teden || 19;
+      EUR_UZ = n.eur_uz || 36;
+      EUR_RTG = n.eur_rtg || 5;
+    }
+  } catch(e) { console.error('Nastavitve:', e); }
+}
+
+function prikaziNastavitve() {
+  document.getElementById('set-norma').value = NORMA_TEDEN;
+  document.getElementById('set-norma-trenutna').textContent = NORMA_TEDEN;
+  document.getElementById('set-eur-uz').value = EUR_UZ;
+  document.getElementById('set-eur-uz-trenutna').textContent = EUR_UZ;
+  document.getElementById('set-eur-rtg').value = EUR_RTG;
+  document.getElementById('set-eur-rtg-trenutna').textContent = EUR_RTG;
+}
+
+async function shraniNormo() {
+  const nova = parseInt(document.getElementById('set-norma').value);
+  if (!nova || nova < 1) { toast('Neveljavna vrednost', true); return; }
+  try {
+    await sb('nastavitve?id=eq.1', {
+      method: 'PATCH',
+      body: JSON.stringify({ norma_teden: nova }),
+      prefer: 'return=minimal'
+    });
+    NORMA_TEDEN = nova;
+    prikaziNastavitve();
+    toast('Norma shranjena ✓');
+    naloziQuickStats();
+  } catch(e) { toast('Napaka: ' + e.message, true); }
+}
+
+async function shraniCene() {
+  const uz = parseInt(document.getElementById('set-eur-uz').value);
+  const rtg = parseInt(document.getElementById('set-eur-rtg').value);
+  if (!uz || !rtg) { toast('Neveljavna vrednost', true); return; }
+  try {
+    await sb('nastavitve?id=eq.1', {
+      method: 'PATCH',
+      body: JSON.stringify({ eur_uz: uz, eur_rtg: rtg }),
+      prefer: 'return=minimal'
+    });
+    EUR_UZ = uz; EUR_RTG = rtg;
+    prikaziNastavitve();
+    toast('Cene shranjene ✓');
+    naloziQuickStats();
+  } catch(e) { toast('Napaka: ' + e.message, true); }
+}
+
 // ─── INIT ────────────────────────────────────────────────────────
-document.getElementById('f-datum').value = new Date().toISOString().slice(0,10);
-initPreiskaveTabela();
-initLetoSelector();
-initQuarterSel();
-initUvozLetoSelector();
-initHistLetoSelector();
-naloziQuickStats();
+async function init() {
+  document.getElementById('f-datum').value = new Date().toISOString().slice(0,10);
+  initPreiskaveTabela();
+  initLetoSelector();
+  initQuarterSel();
+  initUvozLetoSelector();
+  initHistLetoSelector();
+  await naloziNastavitve();
+  prikaziNastavitve();
+  naloziQuickStats();
+}
+init();
 </script>
 </body>
 </html>

@@ -1,0 +1,1066 @@
+<!DOCTYPE html>
+<html lang="sl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>UZ Sledilnik</title>
+<style>
+  :root {
+    --primary: #2563eb;
+    --primary-light: #eff6ff;
+    --primary-dark: #1d4ed8;
+    --success: #16a34a;
+    --success-light: #f0fdf4;
+    --warning: #d97706;
+    --warning-light: #fffbeb;
+    --danger: #dc2626;
+    --danger-light: #fef2f2;
+    --gray-50: #f9fafb;
+    --gray-100: #f3f4f6;
+    --gray-200: #e5e7eb;
+    --gray-300: #d1d5db;
+    --gray-400: #9ca3af;
+    --gray-500: #6b7280;
+    --gray-600: #4b5563;
+    --gray-700: #374151;
+    --gray-800: #1f2937;
+    --gray-900: #111827;
+    --radius: 10px;
+    --shadow: 0 1px 3px rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.06);
+    --shadow-md: 0 4px 6px rgba(0,0,0,0.07), 0 2px 4px rgba(0,0,0,0.05);
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background: var(--gray-50);
+    color: var(--gray-800);
+    font-size: 14px;
+    line-height: 1.5;
+  }
+  /* NAV */
+  nav {
+    background: white;
+    border-bottom: 1px solid var(--gray-200);
+    padding: 0 20px;
+    display: flex;
+    align-items: center;
+    gap: 0;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    box-shadow: var(--shadow);
+  }
+  .nav-brand {
+    font-weight: 700;
+    font-size: 16px;
+    color: var(--primary);
+    padding: 14px 20px 14px 0;
+    border-right: 1px solid var(--gray-200);
+    margin-right: 8px;
+    white-space: nowrap;
+  }
+  .nav-tab {
+    padding: 16px 14px;
+    cursor: pointer;
+    color: var(--gray-500);
+    font-weight: 500;
+    border-bottom: 2px solid transparent;
+    transition: all .15s;
+    white-space: nowrap;
+    font-size: 13px;
+  }
+  .nav-tab:hover { color: var(--gray-700); }
+  .nav-tab.active { color: var(--primary); border-bottom-color: var(--primary); }
+
+  /* LAYOUT */
+  .container { max-width: 900px; margin: 0 auto; padding: 24px 16px; }
+  .page { display: none; }
+  .page.active { display: block; }
+
+  /* CARDS */
+  .card {
+    background: white;
+    border-radius: var(--radius);
+    border: 1px solid var(--gray-200);
+    box-shadow: var(--shadow);
+    padding: 20px;
+    margin-bottom: 16px;
+  }
+  .card-title {
+    font-size: 13px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: .05em;
+    color: var(--gray-500);
+    margin-bottom: 12px;
+  }
+
+  /* STATS GRID */
+  .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 12px; margin-bottom: 16px; }
+  .stat-card {
+    background: white;
+    border: 1px solid var(--gray-200);
+    border-radius: var(--radius);
+    padding: 16px;
+    box-shadow: var(--shadow);
+  }
+  .stat-label { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: .05em; color: var(--gray-400); margin-bottom: 4px; }
+  .stat-value { font-size: 26px; font-weight: 700; color: var(--gray-900); line-height: 1; }
+  .stat-sub { font-size: 12px; color: var(--gray-500); margin-top: 4px; }
+  .stat-card.green { border-left: 3px solid var(--success); }
+  .stat-card.blue { border-left: 3px solid var(--primary); }
+  .stat-card.orange { border-left: 3px solid var(--warning); }
+  .stat-card.red { border-left: 3px solid var(--danger); }
+
+  /* FORMS */
+  .form-group { margin-bottom: 14px; }
+  label { display: block; font-size: 12px; font-weight: 600; color: var(--gray-600); margin-bottom: 5px; }
+  input, select, textarea {
+    width: 100%;
+    padding: 9px 12px;
+    border: 1px solid var(--gray-300);
+    border-radius: 7px;
+    font-size: 14px;
+    color: var(--gray-800);
+    background: white;
+    transition: border .15s, box-shadow .15s;
+    outline: none;
+  }
+  input:focus, select:focus, textarea:focus {
+    border-color: var(--primary);
+    box-shadow: 0 0 0 3px rgba(37,99,235,.1);
+  }
+  .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .form-row-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; }
+
+  /* PREISKAVE TABLE */
+  .preiskave-table { width: 100%; border-collapse: collapse; }
+  .preiskave-table th {
+    text-align: left;
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: .04em;
+    color: var(--gray-500);
+    padding: 8px 10px;
+    background: var(--gray-50);
+    border-bottom: 1px solid var(--gray-200);
+  }
+  .preiskave-table td { padding: 6px 10px; border-bottom: 1px solid var(--gray-100); }
+  .preiskave-table tr:last-child td { border-bottom: none; }
+  .preiskave-table td:last-child { width: 100px; }
+  .qty-input {
+    width: 70px;
+    padding: 5px 8px;
+    text-align: center;
+    border: 1px solid var(--gray-300);
+    border-radius: 6px;
+    font-size: 14px;
+  }
+  .is-rtg { background: #fef9ec; }
+  .badge-rtg {
+    display: inline-block;
+    font-size: 10px;
+    font-weight: 700;
+    background: #fde68a;
+    color: #92400e;
+    border-radius: 4px;
+    padding: 1px 5px;
+    margin-left: 6px;
+    vertical-align: middle;
+  }
+
+  /* BUTTONS */
+  .btn {
+    padding: 9px 18px;
+    border-radius: 7px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    border: none;
+    transition: all .15s;
+  }
+  .btn-primary { background: var(--primary); color: white; }
+  .btn-primary:hover { background: var(--primary-dark); }
+  .btn-secondary { background: var(--gray-100); color: var(--gray-700); border: 1px solid var(--gray-300); }
+  .btn-secondary:hover { background: var(--gray-200); }
+  .btn-danger { background: var(--danger-light); color: var(--danger); border: 1px solid #fca5a5; }
+  .btn-danger:hover { background: #fee2e2; }
+  .btn-sm { padding: 5px 10px; font-size: 12px; }
+  .btn-row { display: flex; gap: 8px; justify-content: flex-end; margin-top: 16px; }
+
+  /* PROGRESS BAR */
+  .progress-wrap { margin: 10px 0; }
+  .progress-label { display: flex; justify-content: space-between; font-size: 12px; color: var(--gray-600); margin-bottom: 5px; }
+  .progress-bar { height: 8px; background: var(--gray-200); border-radius: 4px; overflow: hidden; }
+  .progress-fill { height: 100%; border-radius: 4px; transition: width .4s; }
+  .progress-fill.ok { background: var(--success); }
+  .progress-fill.over { background: var(--primary); }
+  .progress-fill.under { background: var(--warning); }
+
+  /* MESECNI PREGLED */
+  .month-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 12px; }
+  .month-card {
+    background: white;
+    border: 1px solid var(--gray-200);
+    border-radius: var(--radius);
+    padding: 16px;
+    box-shadow: var(--shadow);
+  }
+  .month-card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+  .month-name { font-weight: 700; font-size: 15px; }
+  .month-surplus { font-size: 12px; font-weight: 600; padding: 3px 8px; border-radius: 5px; }
+  .month-surplus.pos { background: var(--success-light); color: var(--success); }
+  .month-surplus.neg { background: var(--danger-light); color: var(--danger); }
+  .month-surplus.zero { background: var(--gray-100); color: var(--gray-500); }
+  .month-detail { font-size: 12px; color: var(--gray-600); line-height: 1.8; }
+  .month-detail span { font-weight: 600; color: var(--gray-800); }
+
+  /* HISTORY TABLE */
+  .history-table { width: 100%; border-collapse: collapse; }
+  .history-table th {
+    text-align: left;
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: .04em;
+    color: var(--gray-500);
+    padding: 8px 12px;
+    background: var(--gray-50);
+    border-bottom: 1px solid var(--gray-200);
+  }
+  .history-table td { padding: 10px 12px; border-bottom: 1px solid var(--gray-100); font-size: 13px; }
+  .history-table tr:hover td { background: var(--gray-50); }
+  .history-table tr:last-child td { border-bottom: none; }
+  .loc-badge {
+    display: inline-block;
+    font-size: 11px;
+    font-weight: 600;
+    padding: 2px 7px;
+    border-radius: 5px;
+  }
+  .loc-lj { background: #dbeafe; color: #1e40af; }
+  .loc-bled { background: #d1fae5; color: #065f46; }
+  .plac-badge {
+    display: inline-block;
+    font-size: 10px;
+    font-weight: 600;
+    padding: 1px 6px;
+    border-radius: 4px;
+    background: var(--gray-100);
+    color: var(--gray-600);
+  }
+
+  /* PROSTI DNEVI */
+  .off-list { display: flex; flex-wrap: wrap; gap: 8px; }
+  .off-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: var(--gray-100);
+    border: 1px solid var(--gray-200);
+    border-radius: 20px;
+    padding: 4px 10px;
+    font-size: 12px;
+  }
+  .off-chip.dopust { background: #eff6ff; border-color: #bfdbfe; color: #1d4ed8; }
+  .off-chip.praznik { background: #fdf4ff; border-color: #e9d5ff; color: #7c3aed; }
+  .off-chip-del { cursor: pointer; color: var(--gray-400); font-size: 14px; line-height: 1; }
+  .off-chip-del:hover { color: var(--danger); }
+
+  /* TRIMESECJE SELECTOR */
+  .quarter-sel {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 16px;
+    flex-wrap: wrap;
+  }
+  .quarter-btn {
+    padding: 6px 14px;
+    border-radius: 6px;
+    border: 1px solid var(--gray-300);
+    background: white;
+    cursor: pointer;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--gray-600);
+    transition: all .15s;
+  }
+  .quarter-btn.active { background: var(--primary); color: white; border-color: var(--primary); }
+
+  /* TOAST */
+  #toast {
+    position: fixed;
+    bottom: 24px;
+    right: 24px;
+    background: var(--gray-900);
+    color: white;
+    padding: 12px 20px;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 500;
+    opacity: 0;
+    transform: translateY(8px);
+    transition: all .25s;
+    z-index: 9999;
+    max-width: 320px;
+  }
+  #toast.show { opacity: 1; transform: translateY(0); }
+  #toast.err { background: var(--danger); }
+
+  /* LOADING */
+  .spinner {
+    width: 20px; height: 20px;
+    border: 2px solid var(--gray-200);
+    border-top-color: var(--primary);
+    border-radius: 50%;
+    animation: spin .6s linear infinite;
+    display: inline-block;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .loading-row { text-align: center; padding: 40px; color: var(--gray-400); }
+
+  /* IZPLACILO BOX */
+  .izplacilo-box {
+    background: linear-gradient(135deg, #eff6ff, #e0f2fe);
+    border: 1px solid #bfdbfe;
+    border-radius: var(--radius);
+    padding: 20px;
+    margin-top: 12px;
+  }
+  .izplacilo-title { font-weight: 700; color: var(--primary-dark); margin-bottom: 10px; font-size: 15px; }
+  .izplacilo-row { display: flex; justify-content: space-between; font-size: 13px; color: var(--gray-700); padding: 3px 0; }
+  .izplacilo-total { display: flex; justify-content: space-between; font-size: 16px; font-weight: 700; color: var(--primary-dark); border-top: 1px solid #93c5fd; margin-top: 8px; padding-top: 8px; }
+
+  .empty-state { text-align: center; padding: 48px 20px; color: var(--gray-400); }
+  .empty-state-icon { font-size: 36px; margin-bottom: 10px; }
+  .empty-state-text { font-size: 14px; }
+
+  /* VNOS SEKCIJA */
+  .section-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; }
+  .section-title { font-size: 18px; font-weight: 700; color: var(--gray-900); }
+
+  @media (max-width: 600px) {
+    .form-row, .form-row-3 { grid-template-columns: 1fr; }
+    .stats-grid { grid-template-columns: 1fr 1fr; }
+    nav { overflow-x: auto; }
+  }
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="nav-brand">🔬 UZ Sledilnik</div>
+  <div class="nav-tab active" onclick="showPage('vnos')">Vnos</div>
+  <div class="nav-tab" onclick="showPage('meseci')">Meseci</div>
+  <div class="nav-tab" onclick="showPage('trimesecje')">Trimesečje</div>
+  <div class="nav-tab" onclick="showPage('prosti')">Prosti dnevi</div>
+  <div class="nav-tab" onclick="showPage('zgodovina')">Zgodovina</div>
+</nav>
+
+<!-- ====== VNOS ====== -->
+<div id="page-vnos" class="page active">
+<div class="container">
+
+  <!-- Hitra statistika -->
+  <div class="stats-grid" id="quick-stats">
+    <div class="stat-card blue">
+      <div class="stat-label">Ta mesec - UZ</div>
+      <div class="stat-value" id="qs-uz">—</div>
+      <div class="stat-sub" id="qs-uz-sub">od normy</div>
+    </div>
+    <div class="stat-card green">
+      <div class="stat-label">Višek UZ</div>
+      <div class="stat-value" id="qs-visek">—</div>
+      <div class="stat-sub" id="qs-visek-eur">€ bruto</div>
+    </div>
+    <div class="stat-card orange">
+      <div class="stat-label">RTG ta mesec</div>
+      <div class="stat-value" id="qs-rtg">—</div>
+      <div class="stat-sub" id="qs-rtg-eur">€ bruto</div>
+    </div>
+    <div class="stat-card" style="border-left:3px solid var(--gray-400)">
+      <div class="stat-label">Norma ta mesec</div>
+      <div class="stat-value" id="qs-norma">—</div>
+      <div class="stat-sub" id="qs-norma-sub">delovnih ponedeljkov</div>
+    </div>
+  </div>
+
+  <!-- Forma za vnos -->
+  <div class="card">
+    <div class="section-header">
+      <div class="section-title">Nova ambulanta</div>
+    </div>
+
+    <div class="form-row">
+      <div class="form-group">
+        <label>Datum ambulante</label>
+        <input type="date" id="f-datum">
+      </div>
+      <div class="form-group">
+        <label>Lokacija</label>
+        <select id="f-lokacija">
+          <option value="Ljubljana">Ljubljana</option>
+          <option value="Bled">Bled</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label>Vrsta plačila</label>
+      <select id="f-placilo">
+        <option value="napotnica">Napotnica</option>
+        <option value="samoplačnik">Samoplačnik</option>
+        <option value="preventiva">Preventiva</option>
+      </select>
+    </div>
+
+    <div class="form-group">
+      <label>Preiskave (vnesite količino)</label>
+      <table class="preiskave-table">
+        <thead>
+          <tr>
+            <th>Vrsta preiskave</th>
+            <th style="width:100px;text-align:center">Število</th>
+          </tr>
+        </thead>
+        <tbody id="preiskave-tbody">
+        </tbody>
+      </table>
+    </div>
+
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-top:8px">
+      <div id="vnos-preview" style="font-size:13px;color:var(--gray-500)"></div>
+      <div class="btn-row" style="margin:0">
+        <button class="btn btn-secondary" onclick="resetForma()">Ponastavi</button>
+        <button class="btn btn-primary" onclick="shraniAmbulanto()">Shrani ambulanto</button>
+      </div>
+    </div>
+  </div>
+
+</div>
+</div>
+
+<!-- ====== MESECI ====== -->
+<div id="page-meseci" class="page">
+<div class="container">
+  <div class="section-header">
+    <div class="section-title">Mesečni pregled</div>
+    <select id="sel-leto" onchange="naloziMesece()" style="width:auto;padding:7px 12px">
+    </select>
+  </div>
+  <div class="month-grid" id="month-grid">
+    <div class="loading-row"><div class="spinner"></div></div>
+  </div>
+</div>
+</div>
+
+<!-- ====== TRIMESECJE ====== -->
+<div id="page-trimesecje" class="page">
+<div class="container">
+  <div class="section-header">
+    <div class="section-title">Trimesečje</div>
+  </div>
+
+  <div class="quarter-sel" id="quarter-sel"></div>
+
+  <div id="quarter-content">
+    <div class="loading-row"><div class="spinner"></div></div>
+  </div>
+</div>
+</div>
+
+<!-- ====== PROSTI DNEVI ====== -->
+<div id="page-prosti" class="page">
+<div class="container">
+  <div class="section-header">
+    <div class="section-title">Prosti dnevi</div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">Dodaj prosti dan</div>
+    <div class="form-row-3">
+      <div class="form-group">
+        <label>Datum</label>
+        <input type="date" id="off-datum">
+      </div>
+      <div class="form-group">
+        <label>Tip</label>
+        <select id="off-tip">
+          <option value="dopust">Dopust</option>
+          <option value="praznik">Praznik</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Opomba (neobvezno)</label>
+        <input type="text" id="off-opomba" placeholder="npr. Novo leto">
+      </div>
+    </div>
+    <div class="btn-row">
+      <button class="btn btn-primary" onclick="dodajProstiDan()">Dodaj</button>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">Vneseni prosti dnevi</div>
+    <div id="off-list" class="off-list">
+      <div class="loading-row"><div class="spinner"></div></div>
+    </div>
+  </div>
+</div>
+</div>
+
+<!-- ====== ZGODOVINA ====== -->
+<div id="page-zgodovina" class="page">
+<div class="container">
+  <div class="section-header">
+    <div class="section-title">Zgodovina ambulant</div>
+  </div>
+  <div class="card" style="padding:0;overflow:hidden">
+    <table class="history-table">
+      <thead>
+        <tr>
+          <th>Datum</th>
+          <th>Lokacija</th>
+          <th>Plačilo</th>
+          <th>UZ</th>
+          <th>RTG</th>
+          <th style="width:60px"></th>
+        </tr>
+      </thead>
+      <tbody id="history-tbody">
+        <tr><td colspan="6" class="loading-row"><div class="spinner"></div></td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+const SUPABASE_URL = 'https://bjozvaxiijpvtsoohzvb.supabase.co';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJqb3p2YXhpaWpwdnRzb29oenZiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU3MzUxMzAsImV4cCI6MjA5MTMxMTEzMH0.cYerSNHXGURKHYDYH0ItxQqPuankmZIRkyTmINtH0vI';
+
+const PREISKAVE = [
+  { id: 'UZ trebuha',           rtg: false },
+  { id: 'UZ mehkih tkiv vratu', rtg: false },
+  { id: 'UZ dojk',              rtg: false },
+  { id: 'UZ vratnih arterij',   rtg: false },
+  { id: 'UZ skrotuma',          rtg: false },
+  { id: 'UZ sečil',             rtg: false },
+  { id: 'RTG PC',               rtg: true  },
+];
+
+const NORMA_TEDEN = 19;
+const EUR_UZ = 36;
+const EUR_RTG = 5;
+
+// ─── API helpers ────────────────────────────────────────────────
+async function sb(path, opts={}) {
+  const url = SUPABASE_URL + '/rest/v1/' + path;
+  const r = await fetch(url, {
+    ...opts,
+    headers: {
+      'apikey': SUPABASE_KEY,
+      'Authorization': 'Bearer ' + SUPABASE_KEY,
+      'Content-Type': 'application/json',
+      'Prefer': opts.prefer || 'return=representation',
+      ...(opts.headers||{})
+    }
+  });
+  if (!r.ok) throw new Error(await r.text());
+  return r.status === 204 ? null : r.json();
+}
+
+// ─── Norma helpers ───────────────────────────────────────────────
+// Vrne ISO datume vseh ponedeljkov v danem mesecu
+function ponedelkjiVmesecu(leto, mesec) {
+  const dnevi = [];
+  const d = new Date(leto, mesec - 1, 1);
+  while (d.getMonth() === mesec - 1) {
+    if (d.getDay() === 1) dnevi.push(d.toISOString().slice(0,10));
+    d.setDate(d.getDate() + 1);
+  }
+  return dnevi;
+}
+
+// Iz offDays (array datumov) izračuna normo za mesec
+function normaZaMesec(leto, mesec, offDays) {
+  const pons = ponedelkjiVmesecu(leto, mesec);
+  const delovni = pons.filter(d => !offDays.includes(d));
+  return { norma: delovni.length * NORMA_TEDEN, ponedeljki: delovni.length, skupaj: pons.length };
+}
+
+// ─── Init preiskave tabele ────────────────────────────────────────
+function initPreiskaveTabela() {
+  const tb = document.getElementById('preiskave-tbody');
+  tb.innerHTML = PREISKAVE.map(p => `
+    <tr class="${p.rtg ? 'is-rtg' : ''}">
+      <td>
+        ${p.id}
+        ${p.rtg ? '<span class="badge-rtg">RTG</span>' : ''}
+      </td>
+      <td style="text-align:center">
+        <input type="number" class="qty-input" data-id="${p.id}" data-rtg="${p.rtg}"
+               min="0" value="" placeholder="0" oninput="posodobiPreview()">
+      </td>
+    </tr>
+  `).join('');
+}
+
+function posodobiPreview() {
+  const inputs = document.querySelectorAll('.qty-input');
+  let uz = 0, rtg = 0;
+  inputs.forEach(inp => {
+    const v = parseInt(inp.value) || 0;
+    if (inp.dataset.rtg === 'true') rtg += v;
+    else uz += v;
+  });
+  const total = uz + rtg;
+  document.getElementById('vnos-preview').textContent =
+    total > 0 ? `Skupaj: ${uz} UZ + ${rtg} RTG = ${total} preiskav` : '';
+}
+
+// ─── SHRANI AMBULANTO ────────────────────────────────────────────
+async function shraniAmbulanto() {
+  const datum = document.getElementById('f-datum').value;
+  const lok = document.getElementById('f-lokacija').value;
+  const plac = document.getElementById('f-placilo').value;
+  if (!datum) { toast('Vnesite datum', true); return; }
+
+  const items = [];
+  document.querySelectorAll('.qty-input').forEach(inp => {
+    const v = parseInt(inp.value) || 0;
+    if (v > 0) items.push({ vrsta_preiskave: inp.dataset.id, kolicina: v });
+  });
+  if (items.length === 0) { toast('Vnesite vsaj eno preiskavo', true); return; }
+
+  try {
+    const [session] = await sb('sessions', {
+      method: 'POST',
+      body: JSON.stringify({ datum, lokacija: lok, vrsta_placila: plac })
+    });
+    const itemsData = items.map(it => ({ session_id: session.id, ...it }));
+    await sb('session_items', { method: 'POST', body: JSON.stringify(itemsData) });
+    toast('Ambulanta shranjena ✓');
+    resetForma();
+    naloziQuickStats();
+  } catch(e) {
+    toast('Napaka: ' + e.message, true);
+  }
+}
+
+function resetForma() {
+  document.querySelectorAll('.qty-input').forEach(i => i.value = '');
+  document.getElementById('f-datum').value = new Date().toISOString().slice(0,10);
+  posodobiPreview();
+}
+
+// ─── QUICK STATS ─────────────────────────────────────────────────
+async function naloziQuickStats() {
+  const now = new Date();
+  const leto = now.getFullYear();
+  const mesec = now.getMonth() + 1;
+  const od = `${leto}-${String(mesec).padStart(2,'0')}-01`;
+  const do_ = `${leto}-${String(mesec).padStart(2,'0')}-${new Date(leto,mesec,0).getDate()}`;
+
+  try {
+    const sessions = await sb(`sessions?datum=gte.${od}&datum=lte.${do_}&select=id,datum`);
+    const offDays = await sb(`off_days?datum=gte.${od}&datum=lte.${do_}&select=datum`);
+    const offArr = offDays.map(o => o.datum);
+    const { norma, ponedeljki } = normaZaMesec(leto, mesec, offArr);
+
+    let uz = 0, rtg = 0;
+    if (sessions.length > 0) {
+      const ids = sessions.map(s => s.id).join(',');
+      const items = await sb(`session_items?session_id=in.(${ids})&select=vrsta_preiskave,kolicina`);
+      items.forEach(it => {
+        if (it.vrsta_preiskave === 'RTG PC') rtg += it.kolicina;
+        else uz += it.kolicina;
+      });
+    }
+
+    const visek = uz - norma;
+    document.getElementById('qs-uz').textContent = uz;
+    document.getElementById('qs-uz-sub').textContent = `norma: ${norma}`;
+    document.getElementById('qs-visek').textContent = visek >= 0 ? '+' + visek : visek;
+    document.getElementById('qs-visek').style.color = visek >= 0 ? 'var(--success)' : 'var(--danger)';
+    document.getElementById('qs-visek-eur').textContent = visek > 0 ? `≈ ${visek * EUR_UZ} € bruto` : '—';
+    document.getElementById('qs-rtg').textContent = rtg;
+    document.getElementById('qs-rtg-eur').textContent = rtg > 0 ? `≈ ${rtg * EUR_RTG} € bruto` : '—';
+    document.getElementById('qs-norma').textContent = norma;
+    document.getElementById('qs-norma-sub').textContent = `${ponedeljki} delovnih pon.`;
+  } catch(e) { console.error(e); }
+}
+
+// ─── MESECI ──────────────────────────────────────────────────────
+function initLetoSelector() {
+  const sel = document.getElementById('sel-leto');
+  const y = new Date().getFullYear();
+  for (let l = y; l >= y - 2; l--) {
+    const o = document.createElement('option');
+    o.value = l; o.textContent = l;
+    sel.appendChild(o);
+  }
+}
+
+async function naloziMesece() {
+  const leto = parseInt(document.getElementById('sel-leto').value);
+  const grid = document.getElementById('month-grid');
+  grid.innerHTML = '<div class="loading-row"><div class="spinner"></div></div>';
+
+  try {
+    const od = `${leto}-01-01`;
+    const do_ = `${leto}-12-31`;
+    const sessions = await sb(`sessions?datum=gte.${od}&datum=lte.${do_}&select=id,datum`);
+    const offDays = await sb(`off_days?datum=gte.${od}&datum=lte.${do_}&select=datum,tip`);
+    const offArr = offDays.map(o => o.datum);
+
+    let items = [];
+    if (sessions.length > 0) {
+      const ids = sessions.map(s => s.id).join(',');
+      items = await sb(`session_items?session_id=in.(${ids})&select=*`);
+    }
+
+    // Združi sessions z items
+    const sessMap = {};
+    sessions.forEach(s => { sessMap[s.id] = s; });
+
+    grid.innerHTML = '';
+    const now = new Date();
+
+    for (let m = 1; m <= 12; m++) {
+      if (leto === now.getFullYear() && m > now.getMonth() + 1) break;
+
+      const mesecSess = sessions.filter(s => parseInt(s.datum.slice(5,7)) === m);
+      const mesecItems = items.filter(it => {
+        const s = sessMap[it.session_id];
+        return s && parseInt(s.datum.slice(5,7)) === m;
+      });
+
+      let uz = 0, rtg = 0;
+      mesecItems.forEach(it => {
+        if (it.vrsta_preiskave === 'RTG PC') rtg += it.kolicina;
+        else uz += it.kolicina;
+      });
+
+      const { norma, ponedeljki } = normaZaMesec(leto, m, offArr);
+      const visek = uz - norma;
+
+      const meseci = ['','Januar','Februar','Marec','April','Maj','Junij','Julij','Avgust','September','Oktober','November','December'];
+
+      const card = document.createElement('div');
+      card.className = 'month-card';
+      card.innerHTML = `
+        <div class="month-card-header">
+          <div class="month-name">${meseci[m]}</div>
+          <div class="month-surplus ${visek > 0 ? 'pos' : visek < 0 ? 'neg' : 'zero'}">
+            ${visek > 0 ? '+' : ''}${visek} UZ
+          </div>
+        </div>
+        <div class="progress-wrap">
+          <div class="progress-label">
+            <span>${uz} / ${norma} UZ</span>
+            <span>${Math.round(norma>0 ? uz/norma*100 : 100)}%</span>
+          </div>
+          <div class="progress-bar">
+            <div class="progress-fill ${visek >= 0 ? 'over' : 'under'}"
+                 style="width:${Math.min(100,norma>0?uz/norma*100:100)}%"></div>
+          </div>
+        </div>
+        <div class="month-detail">
+          Delovni pon.: <span>${ponedeljki}</span> &nbsp;|&nbsp;
+          RTG: <span>${rtg}</span><br>
+          ${visek > 0 ? `Višek UZ: <span style="color:var(--success)">+${visek} × ${EUR_UZ}€ = ${visek*EUR_UZ}€</span><br>` : ''}
+          ${rtg > 0 ? `Višek RTG: <span>${rtg} × ${EUR_RTG}€ = ${rtg*EUR_RTG}€</span>` : ''}
+        </div>
+      `;
+      grid.appendChild(card);
+    }
+  } catch(e) {
+    grid.innerHTML = '<div class="empty-state"><div class="empty-state-text">Napaka pri nalaganju</div></div>';
+    console.error(e);
+  }
+}
+
+// ─── TRIMESECJE ──────────────────────────────────────────────────
+function initQuarterSel() {
+  const sel = document.getElementById('quarter-sel');
+  const now = new Date();
+  const y = now.getFullYear();
+  const quarters = [
+    { label: `Q1 ${y}`, months: [1,2,3], leto: y },
+    { label: `Q2 ${y}`, months: [4,5,6], leto: y },
+    { label: `Q3 ${y}`, months: [7,8,9], leto: y },
+    { label: `Q4 ${y}`, months: [10,11,12], leto: y },
+    { label: `Q1 ${y-1}`, months: [1,2,3], leto: y-1 },
+    { label: `Q2 ${y-1}`, months: [4,5,6], leto: y-1 },
+    { label: `Q3 ${y-1}`, months: [7,8,9], leto: y-1 },
+    { label: `Q4 ${y-1}`, months: [10,11,12], leto: y-1 },
+  ];
+  // Pokaži samo relevantne (ne v prihodnosti)
+  const currentQ = Math.floor((now.getMonth()) / 3);
+  const relevant = quarters.filter((q,i) => {
+    if (q.leto < y) return true;
+    const qi = quarters.slice(0,4).indexOf(q);
+    return qi <= currentQ;
+  });
+
+  sel.innerHTML = relevant.map((q,i) => `
+    <button class="quarter-btn ${i===0?'active':''}" onclick="selectQuarter(this, ${q.leto}, '${q.months.join(',')}')">${q.label}</button>
+  `).join('');
+
+  if (relevant.length > 0) {
+    const q = relevant[0];
+    naloziTrimesecje(q.leto, q.months);
+  }
+}
+
+function selectQuarter(btn, leto, monthsStr) {
+  document.querySelectorAll('.quarter-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  naloziTrimesecje(leto, monthsStr.split(',').map(Number));
+}
+
+async function naloziTrimesecje(leto, months) {
+  const content = document.getElementById('quarter-content');
+  content.innerHTML = '<div class="loading-row"><div class="spinner"></div></div>';
+
+  try {
+    const od = `${leto}-${String(months[0]).padStart(2,'0')}-01`;
+    const zadnji = months[months.length-1];
+    const do_ = `${leto}-${String(zadnji).padStart(2,'0')}-${new Date(leto,zadnji,0).getDate()}`;
+
+    const sessions = await sb(`sessions?datum=gte.${od}&datum=lte.${do_}&select=id,datum`);
+    const offDays = await sb(`off_days?datum=gte.${od}&datum=lte.${do_}&select=datum,tip`);
+    const offArr = offDays.map(o => o.datum);
+
+    let items = [];
+    if (sessions.length > 0) {
+      const ids = sessions.map(s => s.id).join(',');
+      items = await sb(`session_items?session_id=in.(${ids})&select=*`);
+    }
+    const sessMap = {};
+    sessions.forEach(s => { sessMap[s.id] = s; });
+
+    let totalUZ = 0, totalRTG = 0, totalNorma = 0, totalPon = 0;
+    const meseci = ['','Januar','Februar','Marec','April','Maj','Junij','Julij','Avgust','September','Oktober','November','December'];
+
+    const monthRows = months.map(m => {
+      const mesecItems = items.filter(it => {
+        const s = sessMap[it.session_id];
+        return s && parseInt(s.datum.slice(5,7)) === m;
+      });
+      let uz = 0, rtg = 0;
+      mesecItems.forEach(it => {
+        if (it.vrsta_preiskave === 'RTG PC') rtg += it.kolicina;
+        else uz += it.kolicina;
+      });
+      const { norma, ponedeljki } = normaZaMesec(leto, m, offArr);
+      totalUZ += uz; totalRTG += rtg; totalNorma += norma; totalPon += ponedeljki;
+      const v = uz - norma;
+      return `
+        <tr>
+          <td><strong>${meseci[m]}</strong></td>
+          <td>${ponedeljki} pon. × 19 = ${norma}</td>
+          <td>${uz}</td>
+          <td style="color:${v>=0?'var(--success)':'var(--danger)'};font-weight:600">${v>=0?'+':''}${v}</td>
+          <td>${rtg}</td>
+        </tr>`;
+    }).join('');
+
+    const visekUZ = totalUZ - totalNorma;
+    const izpUZ = visekUZ > 0 ? visekUZ * EUR_UZ : 0;
+    const izpRTG = totalRTG * EUR_RTG;
+
+    content.innerHTML = `
+      <div class="card" style="padding:0;overflow:hidden">
+        <table class="history-table">
+          <thead>
+            <tr>
+              <th>Mesec</th>
+              <th>Norma</th>
+              <th>UZ opravljeno</th>
+              <th>Višek/manko</th>
+              <th>RTG</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${monthRows}
+            <tr style="background:var(--gray-50)">
+              <td><strong>SKUPAJ</strong></td>
+              <td><strong>${totalPon} pon. = ${totalNorma}</strong></td>
+              <td><strong>${totalUZ}</strong></td>
+              <td style="font-weight:700;color:${visekUZ>=0?'var(--success)':'var(--danger)'}">
+                ${visekUZ>=0?'+':''}${visekUZ}
+              </td>
+              <td><strong>${totalRTG}</strong></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="izplacilo-box">
+        <div class="izplacilo-title">💶 Obračun viškov</div>
+        <div class="izplacilo-row">
+          <span>Višek UZ preiskav: ${visekUZ > 0 ? visekUZ : 0} × ${EUR_UZ} €</span>
+          <span>${izpUZ} €</span>
+        </div>
+        <div class="izplacilo-row">
+          <span>RTG preiskave: ${totalRTG} × ${EUR_RTG} €</span>
+          <span>${izpRTG} €</span>
+        </div>
+        <div class="izplacilo-total">
+          <span>Skupaj bruto višek</span>
+          <span>${izpUZ + izpRTG} €</span>
+        </div>
+        <div style="font-size:11px;color:var(--gray-400);margin-top:8px">
+          * Izplačilo enkrat na trimesečje. Zneski so bruto.
+          ${visekUZ < 0 ? `<br>⚠️ Manko UZ: ${Math.abs(visekUZ)} preiskav (ni izplačila za manko)` : ''}
+        </div>
+      </div>
+    `;
+  } catch(e) {
+    content.innerHTML = '<div class="empty-state"><div class="empty-state-text">Napaka pri nalaganju</div></div>';
+    console.error(e);
+  }
+}
+
+// ─── PROSTI DNEVI ────────────────────────────────────────────────
+async function naloziProsteDneve() {
+  const list = document.getElementById('off-list');
+  try {
+    const data = await sb('off_days?order=datum.desc&select=*');
+    if (data.length === 0) {
+      list.innerHTML = '<span style="color:var(--gray-400);font-size:13px">Ni vnesenih prostih dni.</span>';
+      return;
+    }
+    list.innerHTML = data.map(d => `
+      <div class="off-chip ${d.tip}">
+        <strong>${formatDatum(d.datum)}</strong>
+        <span style="opacity:.7">${d.tip}</span>
+        ${d.opomba ? `<span style="opacity:.6">– ${d.opomba}</span>` : ''}
+        <span class="off-chip-del" onclick="izbrisiProstiDan('${d.id}')">×</span>
+      </div>
+    `).join('');
+  } catch(e) {
+    list.innerHTML = '<span style="color:var(--danger)">Napaka pri nalaganju</span>';
+  }
+}
+
+async function dodajProstiDan() {
+  const datum = document.getElementById('off-datum').value;
+  const tip = document.getElementById('off-tip').value;
+  const opomba = document.getElementById('off-opomba').value;
+  if (!datum) { toast('Izberite datum', true); return; }
+  try {
+    await sb('off_days', {
+      method: 'POST',
+      body: JSON.stringify({ datum, tip, opomba: opomba || null })
+    });
+    toast('Prosti dan dodan ✓');
+    document.getElementById('off-datum').value = '';
+    document.getElementById('off-opomba').value = '';
+    naloziProsteDneve();
+    naloziQuickStats();
+  } catch(e) {
+    if (e.message.includes('unique')) toast('Ta datum je že vnesen', true);
+    else toast('Napaka: ' + e.message, true);
+  }
+}
+
+async function izbrisiProstiDan(id) {
+  if (!confirm('Izbriši prosti dan?')) return;
+  try {
+    await sb(`off_days?id=eq.${id}`, { method: 'DELETE', prefer: 'return=minimal' });
+    naloziProsteDneve();
+    naloziQuickStats();
+    toast('Prosti dan izbrisan');
+  } catch(e) { toast('Napaka', true); }
+}
+
+// ─── ZGODOVINA ───────────────────────────────────────────────────
+async function naloziZgodovino() {
+  const tb = document.getElementById('history-tbody');
+  try {
+    const sessions = await sb('sessions?order=datum.desc&select=*');
+    if (sessions.length === 0) {
+      tb.innerHTML = '<tr><td colspan="6"><div class="empty-state"><div class="empty-state-icon">📋</div><div class="empty-state-text">Ni še vnesenih ambulant</div></div></td></tr>';
+      return;
+    }
+    const ids = sessions.map(s => s.id).join(',');
+    const items = await sb(`session_items?session_id=in.(${ids})&select=*`);
+
+    tb.innerHTML = sessions.map(s => {
+      const si = items.filter(it => it.session_id === s.id);
+      let uz = 0, rtg = 0;
+      si.forEach(it => {
+        if (it.vrsta_preiskave === 'RTG PC') rtg += it.kolicina;
+        else uz += it.kolicina;
+      });
+      const detail = si.map(it => `${it.vrsta_preiskave}: ${it.kolicina}`).join(', ');
+      return `
+        <tr title="${detail}">
+          <td>${formatDatum(s.datum)}</td>
+          <td><span class="loc-badge ${s.lokacija==='Ljubljana'?'loc-lj':'loc-bled'}">${s.lokacija}</span></td>
+          <td><span class="plac-badge">${s.vrsta_placila}</span></td>
+          <td>${uz > 0 ? uz : '—'}</td>
+          <td>${rtg > 0 ? rtg : '—'}</td>
+          <td>
+            <button class="btn btn-danger btn-sm" onclick="izbrisiSejo('${s.id}')">Briši</button>
+          </td>
+        </tr>`;
+    }).join('');
+  } catch(e) {
+    tb.innerHTML = '<tr><td colspan="6" style="color:var(--danger);padding:20px">Napaka pri nalaganju</td></tr>';
+  }
+}
+
+async function izbrisiSejo(id) {
+  if (!confirm('Izbriši ambulanto in vse njene preiskave?')) return;
+  try {
+    await sb(`sessions?id=eq.${id}`, { method: 'DELETE', prefer: 'return=minimal' });
+    naloziZgodovino();
+    naloziQuickStats();
+    toast('Ambulanta izbrisana');
+  } catch(e) { toast('Napaka', true); }
+}
+
+// ─── NAV ─────────────────────────────────────────────────────────
+function showPage(name) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+  document.getElementById('page-' + name).classList.add('active');
+  event.target.classList.add('active');
+
+  if (name === 'meseci') naloziMesece();
+  if (name === 'trimesecje') { /* already loaded on tab create */ }
+  if (name === 'prosti') naloziProsteDneve();
+  if (name === 'zgodovina') naloziZgodovino();
+}
+
+// ─── UTILS ───────────────────────────────────────────────────────
+function formatDatum(iso) {
+  const [y,m,d] = iso.split('-');
+  return `${d}. ${m}. ${y}`;
+}
+
+let toastTimer;
+function toast(msg, err=false) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = 'show' + (err ? ' err' : '');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.className = '', 3000);
+}
+
+// ─── INIT ────────────────────────────────────────────────────────
+document.getElementById('f-datum').value = new Date().toISOString().slice(0,10);
+initPreiskaveTabela();
+initLetoSelector();
+initQuarterSel();
+naloziQuickStats();
+</script>
+</body>
+</html>

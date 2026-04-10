@@ -822,9 +822,8 @@ async function naloziMesece() {
     grid.innerHTML = '';
     const now = new Date();
 
-    for (let m = 1; m <= 12; m++) {
-      if (leto === now.getFullYear() && m > now.getMonth() + 1) break;
-
+    const maxM = leto === now.getFullYear() ? now.getMonth() + 1 : 12;
+    for (let m = maxM; m >= 1; m--) {
       const mesecSess = sessions.filter(s => parseInt(s.datum.slice(5,7)) === m);
       const mesecItems = items.filter(it => {
         const s = sessMap[it.session_id];

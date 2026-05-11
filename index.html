@@ -889,12 +889,13 @@ function initQuarterSel() {
   ];
   const relevant = allQ.filter((q,i) => i <= currentQ);
 
-  sel.innerHTML = relevant.map((q,i) => `
+  const reversed = [...relevant].reverse();
+  sel.innerHTML = reversed.map((q,i) => `
     <button class="quarter-btn ${i===0?'active':''}" onclick="selectQuarter(this, ${q.leto}, '${q.months.join(',')}')">${q.label}</button>
   `).join('');
 
-  if (relevant.length > 0) {
-    const q = relevant[0];
+  if (reversed.length > 0) {
+    const q = reversed[0];
     naloziTrimesecje(q.leto, q.months);
   }
 }
